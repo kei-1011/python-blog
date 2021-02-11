@@ -20,7 +20,7 @@ class PostDetailView(View):
       'post_data': post_data
     })
 
-class CreatePostView(View):
+class CreatePostView(LoginRequiredMixin,View):
   def get(self,request,*args,**kwargs):
     form = PostForm(request.POST or None)
     return render(request, 'app/post_form.html', {
@@ -32,6 +32,36 @@ class CreatePostView(View):
 
     if form.is_valid():
       post_data = Post()
+      post_data.author = request.user
+      post_data.title = form.cleaned_data['title']
+      post_data.content = form.cleaned_data['content']
+      post_data.save()
+
+      return redirect('post_detail', post_data.id)
+    return render(request, 'app/post_form.html', {
+      'form': form
+    })
+
+
+class PostEditView(LoginRequiredMixin,View):
+  def get(self,request,*args,**kwargs):
+    post_data = Post.objects.get(id=self.kwargs['pk'])
+    form = PostForm(
+      request.POST or None,
+      initial = {
+        'title': post_data.title,
+        'content': post_data.content
+      }
+    )
+    return render(request, 'app/post_form.html', {
+      'form': form
+    })
+
+  def post(self,request,*args,**kwargs):
+    form = PostForm(request.POST or None)
+
+    if form.is_valid():
+      post_data = Post.objects.get(id=self.kwargs['pk'])
       post_data.author = request.user
       post_data.title = form.cleaned_data['title']
       post_data.content = form.cleaned_data['content']
